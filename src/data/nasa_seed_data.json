@@ -1,0 +1,127 @@
+{
+  "element_count": 5,
+  "near_earth_objects": {
+    "2026-07-10": [
+      {
+        "id": "3542519",
+        "name": "(2010 PK9)",
+        "absolute_magnitude_h": 21.7,
+        "estimated_diameter": {
+          "meters": {
+            "estimated_diameter_min": 116.0,
+            "estimated_diameter_max": 259.0
+          }
+        },
+        "is_potentially_hazardous_asteroid": false,
+        "close_approach_data": [
+          {
+            "close_approach_date": "2026-07-10",
+            "relative_velocity": {
+              "kilometers_per_hour": "52020.50"
+            },
+            "miss_distance": {
+              "kilometers": "5124000.00"
+            },
+            "orbiting_body": "Earth"
+          }
+        ]
+      },
+      {
+        "id": "2418135",
+        "name": "(2004 FG11)",
+        "absolute_magnitude_h": 21.1,
+        "estimated_diameter": {
+          "meters": {
+            "estimated_diameter_min": 150.0,
+            "estimated_diameter_max": 330.0
+          }
+        },
+        "is_potentially_hazardous_asteroid": true,
+        "close_approach_data": [
+          {
+            "close_approach_date": "2026-07-10",
+            "relative_velocity": {
+              "kilometers_per_hour": "88000.00"
+            },
+            "miss_distance": {
+              "kilometers": "7300000.00"
+            },
+            "orbiting_body": "Earth"
+          }
+        ]
+      },
+      {
+        "id": "3122500",
+        "name": "(2015 XY)",
+        "absolute_magnitude_h": 24.3,
+        "estimated_diameter": {
+          "meters": {
+            "estimated_diameter_min": 35.0,
+            "estimated_diameter_max": 80.0
+          }
+        },
+        "is_potentially_hazardous_asteroid": false,
+        "close_approach_data": [
+          {
+            "close_approach_date": "2026-07-10",
+            "relative_velocity": {
+              "kilometers_per_hour": "25000.00"
+            },
+            "miss_distance": {
+              "kilometers": "12000000.00"
+            },
+            "orbiting_body": "Earth"
+          }
+        ]
+      },
+      {
+        "id": "3702111",
+        "name": "(2020 BX12)",
+        "absolute_magnitude_h": 20.6,
+        "estimated_diameter": {
+          "meters": {
+            "estimated_diameter_min": 180.0,
+            "estimated_diameter_max": 400.0
+          }
+        },
+        "is_potentially_hazardous_asteroid": true,
+        "close_approach_data": [
+          {
+            "close_approach_date": "2026-07-10",
+            "relative_velocity": {
+              "kilometers_per_hour": "90000.00"
+            },
+            "miss_distance": {
+              "kilometers": "4500000.00"
+            },
+            "orbiting_body": "Earth"
+          }
+        ]
+      },
+      {
+        "id": "3721321",
+        "name": "(2021 JA5)",
+        "absolute_magnitude_h": 23.5,
+        "estimated_diameter": {
+          "meters": {
+            "estimated_diameter_min": 50.0,
+            "estimated_diameter_max": 110.0
+          }
+        },
+        "is_potentially_hazardous_asteroid": false,
+        "close_approach_data": [
+          {
+            "close_approach_date": "2026-07-10",
+            "relative_velocity": {
+              "kilometers_per_hour": "40000.00"
+            },
+            "miss_distance": {
+              "kilometers": "8000000.00"
+            },
+            "orbiting_body": "Earth"
+          }
+        ]
+      }
+    ]
+  }
+}
