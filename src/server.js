@@ -1,14 +1,27 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const config = require('./config');
 const { pool } = require('./database/db');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = config.server.port;
 
 // Middleware
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+// Rate limiting - apply to all API routes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false, 
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+});
+app.use('/api', apiLimiter);
 
 // ==========================================
 // REST API Endpoints
@@ -101,7 +114,11 @@ app.get('/api/asteroids/:id', async (req, res) => {
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`AstraGuard API Server running on http://localhost:${PORT}`);
-});
+// Start the server if running this file directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`AstraGuard API Server running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

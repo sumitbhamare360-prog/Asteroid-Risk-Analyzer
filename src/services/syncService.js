@@ -1,20 +1,59 @@
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 const { pool } = require('../database/db');
 const { calculateMetrics } = require('../utils/analyticsEngine');
 
-async function syncAsteroidData() {
-  const jsonPath = path.join(__dirname, '../data/nasa_seed_data.json');
-  let rawData;
-  
+/**
+ * Fetches asteroid data either from the local seed file or the NASA NeoWs API.
+ * @param {boolean} useSeedFile - If true, reads from the local JSON file.
+ * @returns {Promise<Object>} - A promise that resolves to the raw asteroid data object.
+ */
+async function getAsteroidRawData(useSeedFile) {
+  if (useSeedFile) {
+    console.log('Using local seed data file...');
+    const jsonPath = path.join(__dirname, '../data/nasa_seed_data.json');
+    try {
+      const rawData = fs.readFileSync(jsonPath, 'utf8');
+      return JSON.parse(rawData);
+    } catch (err) {
+      console.error('Failed to read seed data file:', err);
+      throw new Error('Could not read seed file.');
+    }
+  } else {
+    console.log('Fetching live data from NASA NeoWs API...');
+    const apiKey = process.env.NASA_API_KEY || 'DEMO_KEY';
+    if (apiKey === 'DEMO_KEY') {
+      console.warn('WARNING: NASA_API_KEY not found in .env file. Using DEMO_KEY, which has rate limits.');
+    }
+
+    const today = new Date();
+    const startDate = today.toISOString().split('T')[0];
+    today.setDate(today.getDate() + 7);
+    const endDate = today.toISOString().split('T')[0];
+    
+    const url = `https://api.nasa.gov/neo/rest/v1/feed?start_date=${startDate}&end_date=${endDate}&api_key=${apiKey}`;
+
+    try {
+      const response = await axios.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch data from NASA API:', error.response ? error.response.data : error.message);
+      throw new Error('Could not fetch data from NASA API.');
+    }
+  }
+}
+
+async function syncAsteroidData(useSeedFile = false) {
+  let data;
   try {
-    rawData = fs.readFileSync(jsonPath, 'utf8');
+    data = await getAsteroidRawData(useSeedFile);
   } catch (err) {
-    console.error('Failed to read seed data file:', err);
+    console.error(err.message);
     return;
   }
-
-  const data = JSON.parse(rawData);
+  
   const nearEarthObjects = data.near_earth_objects;
   
   // Get a dedicated client from the pool for the transaction
@@ -71,6 +110,9 @@ async function syncAsteroidData() {
           ) VALUES ($1, $2, $3, $4);
         `;
         
+        // To avoid duplicate close_approach entries on re-sync, we could add a check
+        // but for this implementation, we'll insert as new. For a production app,
+        // a composite primary key on (asteroid_id, approach_date) would be better.
         await client.query(insertApproachQuery, [
           ast.id,
           approachData.close_approach_date,
@@ -90,7 +132,7 @@ async function syncAsteroidData() {
 
     // Commit transaction
     await client.query('COMMIT');
-    console.log(`Sync completed successfully. Processed ${recordsProcessed} asteroids.`);
+    console.log(`Sync completed successfully. Processed ${recordsProcessed} records.`);
 
   } catch (err) {
     // Rollback transaction on failure
@@ -98,7 +140,7 @@ async function syncAsteroidData() {
     console.error('Error occurred during synchronization. Transaction rolled back.', err);
     
     try {
-      // 4. Log Failure (using the main pool, as the transaction client might be compromised or rolling back)
+      // 4. Log Failure
       await pool.query(`
         INSERT INTO sync_logs (records_processed, status)
         VALUES ($1, $2)
@@ -118,7 +160,8 @@ module.exports = {
 };
 
 if (require.main === module) {
-  syncAsteroidData()
+  const useSeed = process.argv.includes('--seed');
+  syncAsteroidData(useSeed)
     .then(() => {
       console.log('Sync process finished.');
       process.exit(0);

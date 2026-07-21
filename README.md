@@ -15,9 +15,12 @@ Ensure you have the following installed on your system:
    ```bash
    npm install
    ```
-3. Environment Configuration:
-   - Create a `.env` file in the root directory.
-   - Specify necessary database credentials and configurations (e.g., `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`).
+3. **Environment Configuration**:
+   - Copy the example `.env.example` file to a new file named `.env`:
+     ```bash
+     cp .env.example .env
+     ```
+   - Open the `.env` file and update the variables (e.g., `DB_PASSWORD`, `NASA_API_KEY`) with your specific configuration. The defaults for database connection are set for a standard local PostgreSQL installation.
 
 ## Available Scripts
 
