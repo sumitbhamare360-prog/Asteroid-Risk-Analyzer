@@ -98,10 +98,12 @@ body {
   background-color: var(--accent-cyan);
   border-radius: 50%;
   box-shadow: 0 0 8px var(--accent-cyan);
+  animation: pulse 2s infinite;
 }
 .status-dot.error {
   background-color: var(--accent-red);
   box-shadow: 0 0 8px var(--accent-red);
+  animation: pulse-error 2s infinite;
 }
 
 .main-content {
@@ -132,6 +134,12 @@ body {
   flex-direction: column;
   gap: 10px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.4);
 }
 
 .metric-card h3 {
@@ -187,10 +195,18 @@ body {
   justify-content: space-between;
   padding: 12px 0;
   border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background-color 0.2s ease;
 }
 
-.approach-item:last-child {
-  border-bottom: none;
+.approach-item:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.catalog-row {
+  transition: background-color 0.2s ease;
+}
+.catalog-row:hover {
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 .item-name { color: var(--accent-cyan); font-weight: bold; }
@@ -219,4 +235,29 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); box-shadow: 0 0 12px var(--accent-cyan); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-error {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); box-shadow: 0 0 12px var(--accent-red); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-panel) 25%, #2a2d35 50%, var(--bg-panel) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

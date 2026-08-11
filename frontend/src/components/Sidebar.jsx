@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 
 const Sidebar = () => {
   return (
@@ -6,8 +7,8 @@ const Sidebar = () => {
       <div style={{ marginBottom: '30px', color: 'var(--text-muted)' }}>
         <small>NAVIGATION</small>
       </div>
-      <a className="sidebar-link active" href="#dashboard">Dashboard Overview</a>
-      <a className="sidebar-link" href="#catalog">Asteroid Catalog</a>
+      <NavLink className={({ isActive }) => isActive ? 'sidebar-link active' : 'sidebar-link'} to="/" end>Dashboard Overview</NavLink>
+      <NavLink className={({ isActive }) => isActive ? 'sidebar-link active' : 'sidebar-link'} to="/catalog">Asteroid Catalog</NavLink>
     </aside>
   );
 };
