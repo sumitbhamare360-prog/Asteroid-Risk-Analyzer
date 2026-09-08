@@ -5,7 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "dev": "concurrently -k -n \"backend,frontend\" -c \"cyan,magenta\" \"nodemon src/server.js\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "nodemon src/server.js",
+    "dev:frontend": "npm run dev --prefix frontend",
     "db:init": "node src/database/init.js",
     "db:sync": "node src/services/syncService.js",
     "test": "jest"
@@ -20,6 +22,7 @@
     "pg": "^8.11.3"
   },
   "devDependencies": {
+    "concurrently": "^10.0.5",
     "jest": "^30.4.2",
     "nodemon": "^3.0.1",
     "supertest": "^7.2.2"
