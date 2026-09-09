@@ -116,8 +116,31 @@ app.get('/api/asteroids/:id', async (req, res) => {
 
 // Start the server if running this file directly
 if (require.main === module) {
-  app.listen(PORT, () => {
+  app.listen(PORT, async () => {
     console.log(`AstraGuard API Server running on http://localhost:${PORT}`);
+
+    // Auto-sync: fetch NASA data and update PostgreSQL on startup
+    const { syncAsteroidData } = require('./services/syncService');
+    console.log('Running initial NASA data sync...');
+    try {
+      await syncAsteroidData();
+      console.log('Initial sync complete.');
+    } catch (err) {
+      console.error('Initial sync failed (server will continue running):', err.message);
+    }
+
+    // Schedule periodic sync every 24 hours
+    const SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
+    setInterval(async () => {
+      console.log('Running scheduled NASA data sync...');
+      try {
+        await syncAsteroidData();
+        console.log('Scheduled sync complete.');
+      } catch (err) {
+        console.error('Scheduled sync failed:', err.message);
+      }
+    }, SYNC_INTERVAL_MS);
+    console.log('Periodic sync scheduled every 24 hours.');
   });
 }
 
