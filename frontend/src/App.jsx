@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import DashboardOverview from './components/DashboardOverview';
 import AsteroidCatalog from './components/AsteroidCatalog';
+import Simulation from './components/simulation/Simulation';
 import './index.css';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           <Routes>
             <Route path="/" element={<DashboardOverview />} />
             <Route path="/catalog" element={<AsteroidCatalog />} />
+            <Route path="/simulation" element={<Simulation />} />
           </Routes>
         </main>
       </div>

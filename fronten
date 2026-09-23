@@ -1,0 +1,180 @@
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
+import TimelineControls from './TimelineControls';
+
+const mockTrajectoryPoints = [
+  { timestamp: '2026-01-01T00:00:00Z', x: 1, y: 2, z: 3 },
+  { timestamp: '2026-01-02T00:00:00Z', x: 4, y: 5, z: 6 },
+  { timestamp: '2026-01-03T00:00:00Z', x: 7, y: 8, z: 9 },
+  { timestamp: '2026-01-04T00:00:00Z', x: 10, y: 11, z: 12 },
+];
+
+describe('TimelineControls Component', () => {
+  describe('Rendering', () => {
+    it('should render frame counter and current date', () => {
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={2}
+        />
+      );
+
+      expect(screen.getByText('Frame: 2 / 3')).toBeInTheDocument();
+      // The date should be formatted from the 3rd trajectory point
+      expect(screen.getByText(/Jan/)).toBeInTheDocument();
+    });
+
+    it('should render play, reset buttons and speed selector', () => {
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={0}
+        />
+      );
+
+      expect(screen.getByTitle('Play')).toBeInTheDocument();
+      expect(screen.getByTitle('Reset to start')).toBeInTheDocument();
+      expect(screen.getByText('Speed:')).toBeInTheDocument();
+
+      const speedSelect = screen.getByRole('combobox');
+      expect(speedSelect).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: '1x' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: '10x' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: '100x' })).toBeInTheDocument();
+    });
+
+    it('should render N/A when no trajectory points exist', () => {
+      render(
+        <TimelineControls
+          trajectoryPoints={[]}
+          currentTimeIndex={0}
+        />
+      );
+
+      expect(screen.getByText('Frame: 0 / 0')).toBeInTheDocument();
+      expect(screen.getByText('N/A')).toBeInTheDocument();
+    });
+
+    it('should disable controls when there are no trajectory points', () => {
+      render(
+        <TimelineControls
+          trajectoryPoints={[]}
+          currentTimeIndex={0}
+        />
+      );
+
+      expect(screen.getByTitle('Play')).toBeDisabled();
+      expect(screen.getByTitle('Reset to start')).toBeDisabled();
+      expect(screen.getByRole('slider')).toBeDisabled();
+    });
+
+    it('should disable reset button when at frame 0', () => {
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={0}
+        />
+      );
+
+      expect(screen.getByTitle('Reset to start')).toBeDisabled();
+    });
+
+    it('should disable play button when at last frame', () => {
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={3}
+        />
+      );
+
+      expect(screen.getByTitle('Play')).toBeDisabled();
+    });
+  });
+
+  describe('Interactions', () => {
+    it('should call onPlayPause when play button is clicked', () => {
+      const onPlayPause = vi.fn();
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={0}
+          onPlayPause={onPlayPause}
+        />
+      );
+
+      fireEvent.click(screen.getByTitle('Play'));
+      expect(onPlayPause).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onReset when reset button is clicked', () => {
+      const onReset = vi.fn();
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={2}
+          onReset={onReset}
+        />
+      );
+
+      fireEvent.click(screen.getByTitle('Reset to start'));
+      expect(onReset).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onSpeedChange when speed is changed', () => {
+      const onSpeedChange = vi.fn();
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={0}
+          speed={1}
+          onSpeedChange={onSpeedChange}
+        />
+      );
+
+      const speedSelect = screen.getByRole('combobox');
+      fireEvent.change(speedSelect, { target: { value: '10' } });
+      expect(onSpeedChange).toHaveBeenCalledWith(10);
+    });
+
+    it('should call onSeek when slider is moved', () => {
+      const onSeek = vi.fn();
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={1}
+          onSeek={onSeek}
+        />
+      );
+
+      const slider = screen.getByRole('slider');
+      fireEvent.change(slider, { target: { value: '3' } });
+      expect(onSeek).toHaveBeenCalledWith(3);
+    });
+
+    it('should display Pause label when playing', () => {
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={1}
+          playing={true}
+        />
+      );
+
+      expect(screen.getByTitle('Pause')).toBeInTheDocument();
+      expect(screen.queryByTitle('Play')).not.toBeInTheDocument();
+    });
+
+    it('should show correct date for current frame', () => {
+      render(
+        <TimelineControls
+          trajectoryPoints={mockTrajectoryPoints}
+          currentTimeIndex={3}
+        />
+      );
+
+      // Frame 3 corresponds to 2026-01-04
+      expect(screen.getByText(/Jan 4/)).toBeInTheDocument();
+    });
+  });
+});

@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const config = require('./config');
 const { pool } = require('./database/db');
+const simulationRoutes = require('./routes/simulation');
 
 const app = express();
 const PORT = config.server.port;
@@ -113,6 +114,9 @@ app.get('/api/asteroids/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error while fetching asteroid details.' });
   }
 });
+
+// Simulation routes: /api/asteroids/:id/trajectory, /impact-risk, /simulation
+app.use('/api/asteroids', simulationRoutes);
 
 // Start the server if running this file directly
 if (require.main === module) {

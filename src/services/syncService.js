@@ -107,12 +107,11 @@ async function syncAsteroidData(useSeedFile = false) {
         const insertApproachQuery = `
           INSERT INTO close_approaches (
             asteroid_id, approach_date, velocity_kmh, miss_distance_km
-          ) VALUES ($1, $2, $3, $4);
+          ) VALUES ($1, $2, $3, $4)
+          ON CONFLICT (asteroid_id, approach_date) DO UPDATE SET
+            velocity_kmh = EXCLUDED.velocity_kmh,
+            miss_distance_km = EXCLUDED.miss_distance_km;
         `;
-        
-        // To avoid duplicate close_approach entries on re-sync, we could add a check
-        // but for this implementation, we'll insert as new. For a production app,
-        // a composite primary key on (asteroid_id, approach_date) would be better.
         await client.query(insertApproachQuery, [
           ast.id,
           approachData.close_approach_date,

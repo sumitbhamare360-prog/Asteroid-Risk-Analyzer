@@ -9,6 +9,7 @@ const Sidebar = () => {
       </div>
       <NavLink className={({ isActive }) => isActive ? 'sidebar-link active' : 'sidebar-link'} to="/" end>Dashboard Overview</NavLink>
       <NavLink className={({ isActive }) => isActive ? 'sidebar-link active' : 'sidebar-link'} to="/catalog">Asteroid Catalog</NavLink>
+      <NavLink className={({ isActive }) => isActive ? 'sidebar-link active' : 'sidebar-link'} to="/simulation">Simulation</NavLink>
     </aside>
   );
 };
