@@ -38,5 +38,15 @@ WHERE older.asteroid_id = newer.asteroid_id
   AND older.approach_date = newer.approach_date
   AND older.id < newer.id;
 
-ALTER TABLE close_approaches
-  ADD CONSTRAINT unique_asteroid_approach_date UNIQUE (asteroid_id, approach_date);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'unique_asteroid_approach_date'
+      AND conrelid = 'close_approaches'::regclass
+  ) THEN
+    ALTER TABLE close_approaches
+      ADD CONSTRAINT unique_asteroid_approach_date UNIQUE (asteroid_id, approach_date);
+  END IF;
+END $$;

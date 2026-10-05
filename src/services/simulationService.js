@@ -69,15 +69,19 @@ async function fetchTrajectoryFromHorizons(asteroidId) {
   if (asteroidResult.rows.length === 0) {
     throw new Error('Asteroid not found');
   }
-  const asteroidName = asteroidResult.rows[0].name;
 
+  const asteroidName = asteroidResult.rows[0].name;
+  // Horizons does not accept NeoWs' prefixed numeric ID (for example,
+  // 2136770). Use the numbered designation shown at the beginning of the
+  // object's canonical name instead.
+  const designation = asteroidName.match(/^\d+/)?.[0] || asteroidName;
   const now = new Date();
   const startTime = now.toISOString().split('T')[0];
   const endTime = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const params = {
     format: 'json',
-    COMMAND: `'${asteroidName}'`,
+    COMMAND: `'${designation}'`,
     OBJ_DATA: 'NO',
     MAKE_EPHEM: 'YES',
     EPHEM_TYPE: 'VECTORS',
@@ -125,8 +129,11 @@ function parseHorizonsVectors(data, asteroidId) {
     const parts = line.includes(',') ? line.split(',').map((part) => part.trim()) : line.trim().split(/\s+/);
     if (parts.length < 7) continue;
 
-    const vectorOffset = parts.length >= 8 ? 2 : 1;
-    const jdt = parseFloat(parts[vectorOffset - 1]);
+    // Horizons CSV output begins with Julian date, calendar date, then the
+    // six vector values. Non-CSV output begins with the Julian date directly.
+    const hasCalendarDate = !Number.isFinite(Number(parts[1]));
+    const vectorOffset = hasCalendarDate ? 2 : 1;
+    const jdt = parseFloat(parts[0]);
     const x = parseFloat(parts[vectorOffset]); const y = parseFloat(parts[vectorOffset + 1]); const z = parseFloat(parts[vectorOffset + 2]);
     const vx = parseFloat(parts[vectorOffset + 3]); const vy = parseFloat(parts[vectorOffset + 4]); const vz = parseFloat(parts[vectorOffset + 5]);
 
@@ -231,11 +238,8 @@ async function fetchImpactRiskFromSentry(asteroidId) {
   if (asteroidResult.rows.length === 0) {
     throw new Error('Asteroid not found');
   }
-  const asteroidName = asteroidResult.rows[0].name;
-
   const params = {
-    format: 'json',
-    des: asteroidName,
+    spk: asteroidId,
   };
 
   const url = `${JPL_SENTRY_BASE_URL}?${new URLSearchParams(params).toString()}`;
@@ -244,7 +248,7 @@ async function fetchImpactRiskFromSentry(asteroidId) {
   const data = response.data;
 
   if (data.signature && data.signature.source && data.signature.source.includes('Sentry')) {
-    if (!data.data || data.data.length === 0) {
+    if (data.error || !data.summary || !Array.isArray(data.data) || data.data.length === 0) {
       return {
         source: 'JPL_SENTRY',
         impactProbability: null,
@@ -260,6 +264,7 @@ async function fetchImpactRiskFromSentry(asteroidId) {
     }
 
     const impacts = data.data;
+    const summary = data.summary;
     const maxProbImpact = impacts.reduce((max, curr) => {
       const maxProb = parseFloat(max.ip || '0');
       const currProb = parseFloat(curr.ip || '0');
@@ -268,18 +273,17 @@ async function fetchImpactRiskFromSentry(asteroidId) {
 
     return {
       source: 'JPL_SENTRY',
-      impactProbability: parseFloat(maxProbImpact.ip),
-      impactDateRange: `${impacts[impacts.length - 1].date} to ${impacts[0].date}`,
-      impactEnergy: parseFloat(maxProbImpact.energy),
-      impactVelocity: parseFloat(maxProbImpact.v_inf),
-      palermoScale: parseFloat(maxProbImpact.ps_cum),
-      torinoScale: parseInt(maxProbImpact.ts || '0', 10),
+      impactProbability: parseFloat(summary.ip),
+      impactDateRange: `${impacts[0].date} to ${impacts[impacts.length - 1].date}`,
+      impactEnergy: parseFloat(summary.energy),
+      impactVelocity: parseFloat(summary.v_imp || summary.v_inf),
+      palermoScale: parseFloat(summary.ps_cum),
+      torinoScale: parseInt(summary.ts_max || maxProbImpact.ts || '0', 10),
       potentialImpacts: impacts.map(i => ({
         date: i.date,
         probability: parseFloat(i.ip),
         energy: parseFloat(i.energy),
-        velocity: parseFloat(i.v_inf),
-        palermoScale: parseFloat(i.ps_cum),
+        palermoScale: parseFloat(i.ps),
         torinoScale: parseInt(i.ts || '0', 10),
       })),
       rawMetadata: { signature: data.signature },
@@ -342,29 +346,29 @@ async function fetchOrbitalElements(asteroidId) {
       if (asteroidResult.rows.length === 0) {
         throw new Error('Asteroid not found');
       }
-      const asteroidName = asteroidResult.rows[0].name;
-
       const params = {
-        format: 'json',
-        des: asteroidName,
+        spk: asteroidId,
       };
 
       const url = `${JPL_SBDB_BASE_URL}?${new URLSearchParams(params).toString()}`;
       const response = await getWithRetry(url);
       const data = response.data;
 
-      if (data.object && data.object.orbit) {
-        const orbit = data.object.orbit;
+      if (data.orbit && Array.isArray(data.orbit.elements)) {
+        const orbit = data.orbit;
+        const elements = Object.fromEntries(
+          orbit.elements.map((element) => [element.name, element.value])
+        );
         return {
           source: 'JPL_SBDB',
-          semiMajorAxis: parseFloat(orbit.a),
-          eccentricity: parseFloat(orbit.e),
-          inclination: parseFloat(orbit.i),
-          longitudeOfAscendingNode: parseFloat(orbit.om),
-          argumentOfPeriapsis: parseFloat(orbit.w),
-          meanAnomaly: parseFloat(orbit.ma),
+          semiMajorAxis: parseFloat(elements.a),
+          eccentricity: parseFloat(elements.e),
+          inclination: parseFloat(elements.i),
+          longitudeOfAscendingNode: parseFloat(elements.om),
+          argumentOfPeriapsis: parseFloat(elements.w),
+          meanAnomaly: parseFloat(elements.ma),
           epoch: orbit.epoch,
-          period: parseFloat(orbit.per),
+          period: parseFloat(elements.per),
           rawMetadata: data,
         };
       }
@@ -383,8 +387,8 @@ async function getSimulationData(asteroidId) {
   if (asteroidResult.rows.length === 0) return null;
   const [approachesResult, trajectory, impactRisk, orbitalElements] = await Promise.all([
     pool.query('SELECT approach_date, velocity_kmh, miss_distance_km FROM close_approaches WHERE asteroid_id = $1 ORDER BY approach_date ASC', [asteroidId]),
-    fetchTrajectory(asteroidId),
-    fetchImpactRisk(asteroidId),
+    fetchTrajectory(asteroidId).catch(() => ({ source: 'JPL_HORIZONS', points: [], startTime: null, endTime: null, stepSize: null, cached: false, error: 'Trajectory data unavailable' })),
+    fetchImpactRisk(asteroidId).catch(() => ({ source: 'JPL_SENTRY', hasAssessment: false, impactProbability: null, impactDateRange: null, impactEnergy: null, impactVelocity: null, palermoScale: null, torinoScale: null, potentialImpacts: [], rawMetadata: { message: 'No JPL Sentry assessment currently available' }, cached: false, error: 'Impact assessment unavailable' })),
     fetchOrbitalElements(asteroidId).catch(() => ({ source: 'JPL_SBDB', message: 'Unavailable' })),
   ]);
 
